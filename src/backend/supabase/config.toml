@@ -1,0 +1,21 @@
+# Merge these blocks into your existing supabase/config.toml
+# All functions verify the JWT themselves via getAuthenticatedUser(), so the
+# gateway check is disabled (also avoids issues with asymmetric JWT keys).
+# Webhook + public registration endpoints MUST be reachable without a user JWT.
+
+[functions.registrations-create]
+verify_jwt = false
+[functions.payments-initialize]
+verify_jwt = false
+[functions.payments-verify]
+verify_jwt = false
+[functions.payments-webhook]
+verify_jwt = false
+[functions.trainings-set-status]
+verify_jwt = false
+[functions.registrations-export]
+verify_jwt = false
+[functions.org-members-manage]
+verify_jwt = false
+[functions.admin-create-organisation]
+verify_jwt = false
