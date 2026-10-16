@@ -236,7 +236,6 @@ function startAnotherApplication() {
             <h3>Thanks for choosing TrainHub.</h3>
             <p>Your organisation application has been received and is awaiting review. We'll use the contact details you provided if we need to follow up.</p>
             <div v-if="applicationReference" class="reference-box"><span>Application reference</span><strong>{{ applicationReference }}</strong></div>
-            <a class="primary-button full-button" href="/">Back to TrainHub <span aria-hidden="true">→</span></a>
             <button class="secondary-button full-button" type="button" @click="startAnotherApplication">Submit another application</button>
           </div>
 

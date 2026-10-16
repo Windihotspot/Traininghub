@@ -1,18 +1,22 @@
 const allowedOrigins = [
-  'http://localhost:3001',
-  'http://127.0.0.1:3001',
-
   'https://traininghub-wheat.vercel.app',
   'http://traininghub-wheat.vercel.app',
-
 ]
+
+function isAllowedOrigin(origin: string): boolean {
+  if (!origin) return false
+
+  // Allow localhost and 127.0.0.1 on any port
+  if (/^http:\/\/localhost(?::\d+)?$/.test(origin)) return true
+  if (/^http:\/\/127\.0\.0\.1(?::\d+)?$/.test(origin)) return true
+
+  // Allow explicitly listed production origins
+  return allowedOrigins.includes(origin)
+}
 
 export function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') || ''
-
-  const allowOrigin = allowedOrigins.includes(origin)
-    ? origin
-    : 'null'
+  const allowOrigin = isAllowedOrigin(origin) ? origin : 'null'
 
   return {
     'Access-Control-Allow-Origin': allowOrigin,
@@ -21,7 +25,7 @@ export function getCorsHeaders(req: Request): Record<string, string> {
     'Access-Control-Allow-Methods':
       'POST, GET, PUT, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Credentials': 'true',
-    'Vary': 'Origin',
+    Vary: 'Origin',
   }
 }
 
@@ -38,7 +42,7 @@ export function handleCors(req: Request): Response | null {
 export function jsonResponse(
   body: unknown,
   status = 200,
-  req?: Request
+  req?: Request,
 ): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -53,7 +57,7 @@ export function errorResponse(
   message: string,
   status = 400,
   details?: unknown,
-  req?: Request
+  req?: Request,
 ): Response {
   return jsonResponse(
     {
@@ -61,6 +65,6 @@ export function errorResponse(
       details: details ?? null,
     },
     status,
-    req
+    req,
   )
 }
