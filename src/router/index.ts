@@ -1,10 +1,8 @@
-import Dashboard from '@/views/Dashboard.vue'
-import LandingPage from '@/views/LandingPage.vue'
-import Login from '@/views/Login.vue'
-import Portfolio from '@/views/Portfolio.vue'
-import SignupPage from '@/views/SignupPage.vue'
-import { createRouter, createWebHistory } from 'vue-router'
 
+import { createRouter, createWebHistory } from 'vue-router'
+import LandingPage from '@/views/LandingPage.vue'
+import { trainingHubRoutes } from '@/router/traininghub.routes'
+import { trainingHubGuard } from '@/router/guards'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,25 +10,19 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: LandingPage
+      component: LandingPage,
     },
     {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: Dashboard
-    },
-    {
-      path: '/register',
-      name: 'register',
-      component: SignupPage
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: Login
-    },
-   
-  ]
+  path: '/organisations/register',
+  name: 'organisation-register',
+  component: () => import('@/views/OrganisationRegistrationView.vue'),
+  meta: { requiresAuth: false },
+},
+    ...trainingHubRoutes,
+  ],
 })
+
+// Register the navigation guard
+router.beforeEach(trainingHubGuard)
 
 export default router

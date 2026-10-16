@@ -2,6 +2,16 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import AOS from 'aos'
 import 'aos/dist/aos.css'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const login = () => {
+  router.push('/login')
+}
+const register = () => {
+  router.push('/organisations/register')
+}
 
 /* ---------------------------------------------
    Helpers
@@ -261,8 +271,8 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
         </nav>
 
         <div class="flex items-center gap-3">
-          <button class="hidden sm:block text-[14px] font-medium text-[#6B5D7E] hover:text-[#25133B] px-3 py-2">Log in</button>
-          <button class="hidden sm:block bg-[#25133B] hover:bg-[#331B52] transition-colors text-white text-[14px] font-semibold px-4 py-2.5 rounded-full">
+          <button @click="login" class="hidden sm:block text-[14px] font-medium text-[#6B5D7E] hover:text-[#25133B] px-3 py-2">Log in</button>
+          <button @click="register" class="hidden sm:block bg-[#25133B] hover:bg-[#331B52] transition-colors text-white text-[14px] font-semibold px-4 py-2.5 rounded-full">
             Register your organisation
           </button>
           <button
@@ -277,7 +287,7 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
       </div>
       <div v-if="menuOpen" class="md:hidden border-t border-[#ECE4F4] bg-white px-6 py-4 flex flex-col gap-4 text-[15px]">
         <a v-for="l in navLinks" :key="l.label" :href="l.href" @click="menuOpen = false">{{ l.label }}</a>
-        <button class="bg-[#25133B] text-white text-[14px] font-semibold px-4 py-3 rounded-full">Register your organisation</button>
+        <button @click="register" class="bg-[#25133B] text-white text-[14px] font-semibold px-4 py-3 rounded-full">Register your organisation</button>
       </div>
     </header>
 
@@ -298,13 +308,9 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
             register and pay, all in one place. NGX X-Academy is already running on it.
           </p>
           <div class="flex flex-wrap items-center gap-4">
-            <a href="#trainings" class="bg-[#25133B] hover:bg-[#331B52] transition-colors text-white text-[15px] font-semibold px-6 py-3 rounded-full flex items-center gap-2">
-              <i class="mdi mdi-magnify text-[18px]"></i>
-              Browse trainings
-            </a>
-            <a href="#organisations" class="border border-[#DDD0EC] hover:border-[#25133B] transition-colors text-[15px] font-semibold px-6 py-3 rounded-full">
-              Publish your own
-            </a>
+              <button @click="register" class="hidden sm:block bg-[#25133B] hover:bg-[#331B52] transition-colors text-white text-[14px] font-semibold px-4 py-2.5 rounded-full">
+            Register your organisation
+          </button>
           </div>
         </div>
 
@@ -694,12 +700,10 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
             Set up your organisation, publish your first training and start taking registrations.
           </p>
           <div class="flex flex-wrap justify-center gap-4">
-            <button class="bg-[#F2B84B] hover:bg-[#E5A92F] transition-colors text-[#25133B] text-[15px] font-semibold px-6 py-3 rounded-full">
+            <button @click="register" class="bg-[#F2B84B] hover:bg-[#E5A92F] transition-colors text-[#25133B] text-[15px] font-semibold px-6 py-3 rounded-full">
               Register your organisation
             </button>
-            <button class="border border-white/20 hover:border-white/40 transition-colors text-white text-[15px] font-semibold px-6 py-3 rounded-full">
-              Browse trainings
-            </button>
+           
           </div>
         </div>
       </div>

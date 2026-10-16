@@ -1,0 +1,6 @@
+export { TrainingsService } from './trainings.service'
+export { RegistrationsService } from './registrations.service'
+export { OrganisationsService } from './organisations.service'
+export { DiscountsService } from './discounts.service'
+export { CategoriesService } from './categories.service'
+export { uploadAsset } from './storage.service'
