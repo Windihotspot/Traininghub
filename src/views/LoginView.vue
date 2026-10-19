@@ -93,6 +93,10 @@ async function submit() {
 
   return ok
 }
+
+const register = () => {
+  router.push('/organisations/register')
+}
 </script>
 
 <template>
@@ -191,13 +195,9 @@ async function submit() {
         </div>
 
         <div class="form-content">
-          <div class="form-heading">
-            <span class="eyebrow">
-              <span class="eyebrow-dot"></span>
-              TRAINHUB ACCOUNT
-            </span>
+          <div class="form-heading ">
+           
 
-            <h2>{{ titles[mode] }}</h2>
             <p>{{ subtitles[mode] }}</p>
           </div>
 
@@ -334,7 +334,7 @@ async function submit() {
             <template v-if="mode === 'signin'">
               <p>
                 Don't have an account?
-                <button type="button" @click="setMode('signup')">
+                <button type="button" @click="register">
                   Create an account
                 </button>
               </p>

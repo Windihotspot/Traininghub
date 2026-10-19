@@ -148,23 +148,22 @@ function goToLogin() {
           <span>TrainHub</span>
         </a>
 
-        <nav class="main-nav" aria-label="Main navigation">
+        <!-- <nav class="main-nav" aria-label="Main navigation">
           <a href="/trainings">Trainings</a>
           <a href="/#how-it-works">How it works</a>
           <a href="/organisations" aria-current="page">Organisations</a>
           <a href="/#faq">FAQ</a>
-        </nav>
+        </nav> -->
 
         <div class="header-actions">
           <a class="login-link" href="/login">Log in</a>
-          <a class="header-cta" href="#application-form">Register your organisation</a>
         </div>
-        <a class="mobile-cta" href="#application-form">Register organisation</a>
+        
       </div>
     </header>
 
     <main>
-      <section class="hero">
+      <!-- <section class="hero">
         <div class="hero-copy">
           <span class="eyebrow"><span class="eyebrow-dot" /> FOR TRAINING PROVIDERS</span>
           <h1>Bring your training programmes to <span>TrainHub.</span></h1>
@@ -284,14 +283,18 @@ function goToLogin() {
             <p>Once approved, the organisation owner receives an invitation to get started.</p>
           </article>
         </div>
-      </section>
+      </section> -->
 
-      <section id="application-form" class="application-section">
-        <div class="application-intro">
+      <section
+  id="application-form"
+  class="application-section"
+  :class="{ 'is-submitted': submitted }"
+>
+       <div v-if="!submitted" class="application-intro">
           <span class="eyebrow"><span class="eyebrow-dot" /> ORGANISATION ONBOARDING</span>
           <h2>Register your organisation</h2>
           <p>
-            Complete the form and submit your application for review. Fields marked with an asterisk
+            Complete the form and submit your application. Fields marked with an asterisk
             are required.
           </p>
           <div class="review-note">
@@ -299,8 +302,7 @@ function goToLogin() {
             <div>
               <strong>What happens next?</strong>
               <p>
-                Your application will be reviewed by the TrainHub team. If approved, we'll send an
-                invitation to the organisation owner's email address.
+                Login to your account and begin managing your organizations and trianing from one place
               </p>
             </div>
           </div>
@@ -331,10 +333,10 @@ function goToLogin() {
               password you just created to start managing your trainings.
             </p>
 
-            <div v-if="organisationReference" class="reference-box">
+            <!-- <div v-if="organisationReference" class="reference-box">
               <span>Organisation reference</span>
               <strong>{{ organisationReference }}</strong>
-            </div>
+            </div> -->
 
             <button class="primary-button full-button" type="button" @click="goToLogin">
               Continue to login →
@@ -574,7 +576,7 @@ function goToLogin() {
         </div>
       </section>
 
-      <section class="bottom-cta">
+      <!-- <section class="bottom-cta">
         <div>
           <span class="eyebrow">READY TO GET STARTED?</span>
           <h2>Make your next training programme count.</h2>
@@ -583,9 +585,9 @@ function goToLogin() {
         <a href="#application-form" class="light-button"
           >Register your organisation <span aria-hidden="true">→</span></a
         >
-      </section>
+      </section> -->
     </main>
-
+<!-- 
     <footer class="site-footer">
       <a class="brand footer-brand" href="/" aria-label="TrainHub home"
         ><span class="brand-mark" aria-hidden="true"
@@ -609,7 +611,7 @@ function goToLogin() {
         ><a href="/login">Log in</a>
       </div>
       <small>© {{ new Date().getFullYear() }} TrainHub. All rights reserved.</small>
-    </footer>
+    </footer> -->
   </div>
 </template>
 
@@ -1908,5 +1910,18 @@ p {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+.application-section.is-submitted {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 68px);
+  padding: 48px 24px;
+}
+
+.application-section.is-submitted .form-shell {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
 }
 </style>
