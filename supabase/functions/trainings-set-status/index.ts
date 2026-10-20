@@ -33,39 +33,29 @@ serveFn(async (req) => {
   if (['publish', 'open_registration'].includes(action)) {
     const missing: string[] = []
     if (!t.title?.trim()) missing.push('title')
-    if (!t.start_date) missing.push('start_date')
-    if (!t.end_date) missing.push('end_date')
-    if (!t.start_time) missing.push('start_time')
     if (t.fee == null) missing.push('fee')
-    if (['physical', 'hybrid'].includes(t.delivery_mode) && !t.location) missing.push('location')
+
+    if (t.format !== 'self_paced') { // live and blended need a schedule
+      if (!t.start_date) missing.push('start_date')
+      if (!t.end_date) missing.push('end_date')
+      if (!t.start_time) missing.push('start_time')
+      if (['physical', 'hybrid'].includes(t.delivery_mode) && !t.location) missing.push('location')
+    }
+
+    if (t.format !== 'live') { // self-paced and blended need published content
+      const { count } = await admin.from('lessons').select('id', { count: 'exact', head: true })
+        .eq('training_id', t.id).eq('is_published', true)
+      if (!count) missing.push('at least one published lesson')
+    }
+
     if (missing.length) throw new HttpError(422, 'Training is incomplete', { missing })
   }
+
   if (action === 'unpublish') {
     const { count } = await admin.from('registrations').select('id', { count: 'exact', head: true })
       .eq('training_id', t.id).neq('status', 'cancelled')
     if (count) throw new HttpError(409, 'Cannot unpublish a training that already has registrations')
   }
-
-  if (['publish', 'open_registration'].includes(action)) {
-//   const missing: string[] = []
-//   if (!t.title?.trim()) missing.push('title')
-//   if (t.fee == null) missing.push('fee')
-//   if (t.format !== 'self_paced') {                       // live / blended need a schedule
-//     if (!t.start_date) missing.push('start_date')
-//     if (!t.end_date) missing.push('end_date')
-//     if (!t.start_time) missing.push('start_time')
-//     if (['physical', 'hybrid'].includes(t.delivery_mode) && !t.location) missing.push('location')
-//   }
-//   if (t.format !== 'live') {                             // needs publishable content
-//     const { count } = await admin.from('lessons').select('id', { count: 'exact', head: true })
-//       .eq('training_id', t.id).eq('is_published', true)
-//     if (!count) missing.push('at least one published lesson')
-//   }
-//   if (missing.length) throw new HttpError(422, 'Training is incomplete', { missing })
-// }
-//
-// Payment webhook, when status flips to PAID (or immediately if total_amount = 0):
-//   await admin.rpc('grant_enrollments', { p_registration: registration.id })
 
   const { data: updated, error } = await admin.from('trainings')
     .update({ status: rule.to, updated_by: user.id }).eq('id', t.id).select().single()

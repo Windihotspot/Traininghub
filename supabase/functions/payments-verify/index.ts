@@ -39,6 +39,13 @@ serveFn(async (req) => {
     }
   }
 
+  // Grant course access. Idempotent, so it also repairs the case where the webhook marked
+  // the payment paid first but enrolment failed. A failure here must not break the callback page.
+  if (status === 'paid') {
+    const { error } = await admin.rpc('grant_enrollments', { p_registration: pay.registration_id })
+    if (error) console.error('[payments-verify] grant_enrollments failed', { reference, message: error.message })
+  }
+
   return jsonResponse({
     payment: { reference, status },
     registration: { reference: (pay as any).registrations?.reference },
