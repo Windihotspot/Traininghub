@@ -66,7 +66,7 @@ function onTrainingUpdated(t: Training) {
           <TrainingStatusActions :training="training" @updated="onTrainingUpdated" />
         </section>
 
-        <v-tabs v-if="hasCurriculum" v-model="tab" color="primary" class="th-tabs">
+        <v-tabs v-if="hasCurriculum" v-model="tab" color="primary" class="th-tabs m-4">
           <v-tab value="details"><i class="fa-solid fa-circle-info mr-2"></i>Details</v-tab>
           <v-tab value="curriculum"><i class="fa-solid fa-list-check mr-2"></i>Curriculum</v-tab>
         </v-tabs>

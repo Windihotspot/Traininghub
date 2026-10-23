@@ -6,7 +6,7 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 const DEBUG_SUPABASE =
   import.meta.env.DEV ||
-  import.meta.env.VITE_SUPABASE_DEBUG === 'true'
+  import.meta.env.VITE_SUPABASE_DEBUG === 'false'
 
 const redact = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -27,8 +27,20 @@ const redact = (value: unknown): unknown => {
   return value
 }
 
+
 const loggedFetch: typeof fetch = async (input, init) => {
   const request = new Request(input, init)
+
+  // Skip all logging for refresh-token requests
+  const url = new URL(request.url)
+
+  if (
+    url.pathname === '/auth/v1/token' &&
+    url.searchParams.get('grant_type') === 'refresh_token'
+  ) {
+    return fetch(request)
+  }
+
   const requestId = crypto.randomUUID()
   const startedAt = performance.now()
 
@@ -56,6 +68,7 @@ const loggedFetch: typeof fetch = async (input, init) => {
     console.log('Request ID:', requestId)
     console.log('Method:', request.method)
     console.log('URL:', request.url)
+
     console.log(
       'Headers:',
       Object.fromEntries(
@@ -67,6 +80,7 @@ const loggedFetch: typeof fetch = async (input, init) => {
         ]),
       ),
     )
+
     console.log('Payload:', redact(payload))
     console.groupEnd()
   }
