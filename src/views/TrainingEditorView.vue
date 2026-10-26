@@ -9,6 +9,7 @@ import TrainingStatusActions from '@/components/traininghub/TrainingStatusAction
 import DiscountsManager from '@/components/traininghub/DiscountsManager.vue'
 import CurriculumBuilder from '@/components/lms/CurriculumBuilder.vue'
 import type { Training } from '@/types/traininghub'
+import MainLayout from '@/layouts/full/MainLayout.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -36,12 +37,13 @@ function onTrainingUpdated(t: Training) {
 </script>
 
 <template>
-  <main class="th-editor">
+  <MainLayout>
+     <main class="th-editor">
     <div class="th-editor__container">
-      <header class="th-editor__topbar">
+      <!-- <header class="th-editor__topbar">
         <RouterLink :to="{ name: 'dashboard' }" class="th-back"><i class="fa-solid fa-arrow-left"></i> Back to dashboard</RouterLink>
         <AccountMenu />
-      </header>
+      </header> -->
 
       <div v-if="loading || !ready" class="th-state">
         <v-progress-circular indeterminate color="primary" />
@@ -94,6 +96,8 @@ function onTrainingUpdated(t: Training) {
       <footer class="th-footer">TrainHub <span>·</span> Professional training, connected.</footer>
     </div>
   </main>
+  </MainLayout>
+ 
 </template>
 
 <style scoped>

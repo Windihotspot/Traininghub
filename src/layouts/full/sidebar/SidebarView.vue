@@ -23,13 +23,27 @@ const visibleSidebarItems = computed(() =>
 )
 
 function isItemActive(path: string) {
+  // Dashboard should only be active on the dashboard page.
   if (path === '/dashboard') {
-    return route.path === '/dashboard' ||
-      route.path.startsWith('/dashboard/')
+    return route.path === '/dashboard'
   }
 
-  return route.path === path ||
-    route.path.startsWith(`${path}/`)
+  // All Trainings should be active on the list and edit pages,
+  // but not on the New Training page.
+  if (path === '/dashboard/trainings') {
+    return (
+      route.path === '/dashboard/trainings' ||
+      /^\/dashboard\/trainings\/[^/]+\/edit$/.test(route.path)
+    )
+  }
+
+  // New Training should be active on its own route only.
+  if (path === '/dashboard/trainings/new') {
+    return route.path === '/dashboard/trainings/new'
+  }
+
+  // Default matching for other sidebar items.
+  return route.path === path || route.path.startsWith(`${path}/`)
 }
 </script>
 

@@ -135,7 +135,7 @@ onMounted(load)
       <section class="welcome-section">
        
 
-        <!-- <div class="welcome-actions">
+         <div class="welcome-actions flex justify-end ml-auto">
           <v-btn
             v-if="activeOrgId && can('training.create')"
             class="create-training-button"
@@ -151,7 +151,7 @@ onMounted(load)
             <i class="fa-solid fa-plus mr-2"></i>
             New training
           </v-btn>
-        </div> -->
+        </div>
       </section>
 
       <!-- Organisation selector -->

@@ -27,12 +27,10 @@ const sidebarItems: SidebarSection[] = [
     section: 'TRAINING MANAGEMENT',
     roles: ['org_owner', 'org_admin', 'org_staff'],
     items: [
+     
       {
-        title: 'All Trainings',
-        icon: 'fa-solid fa-graduation-cap',
-      },
-      {
-        title: 'Create Training',
+        title: 'Trainings',
+        path: '/dashboard/trainings/new',
         icon: 'fa-solid fa-circle-plus',
       },
     ],
