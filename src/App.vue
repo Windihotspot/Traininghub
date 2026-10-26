@@ -1,19 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
+const authStore = useAuthStore()
+
+onMounted(async () => {
+  await authStore.loadUserContext()
+})
 </script>
 
 <template>
-  <main class="text-neutral-800">
-    <RouterView />
-  </main>
+  <RouterView />
 </template>
-
-<style>
-.custom-btn {
-  background-color: #27bfa0;
-}
-</style>
-
-

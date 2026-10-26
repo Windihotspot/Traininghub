@@ -6,6 +6,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useAsyncAction } from '@/composables/useAsyncAction'
 import { safeRedirect } from '@/router/guards'
 
+
 type Mode = 'signin' | 'signup' | 'forgot'
 
 const route = useRoute()
@@ -59,41 +60,69 @@ function canSubmit() {
     && form.password.length >= 8
 }
 
-async function submit() {
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+console.log('Auth store:', authStore)
+console.log('signIn:', typeof authStore.signIn)
+
+async function handleSubmit() {
   info.value = ''
 
-  const ok = await run(async () => {
+  await run(async () => {
     if (mode.value === 'signin') {
-      await signIn(form.email.trim(), form.password)
+      await authStore.signIn(
+        form.email.trim(),
+        form.password,
+      )
+
+      await authStore.loadUserContext(true)
+
+      if (authStore.authError) {
+        throw new Error(authStore.authError)
+      }
 
       await router.replace(
         safeRedirect(route.query.redirect) ?? { name: 'dashboard' },
       )
-    } else if (mode.value === 'signup') {
-      const needsConfirm = await signUp(
+
+      return
+    }
+
+    if (mode.value === 'signup') {
+      const needsConfirmation = await authStore.signUp(
         form.email.trim(),
         form.password,
-        form.full_name.trim(),
+        form.full_name,
       )
 
-      if (needsConfirm) {
-        info.value = 'Check your email to confirm your account, then sign in.'
+      if (needsConfirmation) {
+        info.value =
+          'Account created. Please check your email to confirm your account.'
+        mode.value = 'signin'
       } else {
+        await authStore.loadUserContext(true)
+
+        if (authStore.authError) {
+          throw new Error(authStore.authError)
+        }
+
         await router.replace(
           safeRedirect(route.query.redirect) ?? { name: 'dashboard' },
         )
       }
-    } else {
-      await sendReset(form.email.trim())
-      info.value = 'If that email has an account, a reset link is on its way.'
+
+      return
     }
 
-    return true
+    if (mode.value === 'forgot') {
+      await authStore.sendReset(form.email.trim())
+
+      info.value =
+        'If an account exists for that email, a password reset link has been sent.'
+    }
   })
-
-  return ok
 }
-
 const register = () => {
   router.push('/organisations/register')
 }
@@ -219,7 +248,7 @@ const register = () => {
             <p>{{ info }}</p>
           </div>
 
-          <form class="auth-form" @submit.prevent="submit">
+          <form class="auth-form" @submit.prevent="handleSubmit">
             <div v-if="mode === 'signup'" class="field">
               <label for="full_name">
                 Full name <span>*</span>

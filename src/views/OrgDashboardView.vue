@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
 import { useOrgContext } from '@/composables/useOrgContext'
-
+import MainLayout from '@/layouts/full/MainLayout.vue'
 import AccountMenu from '@/components/traininghub/AccountMenu.vue'
 import OrgStats from '@/components/traininghub/OrgStats.vue'
 import OrgTrainingsList from '@/components/traininghub/OrgTrainingsList.vue'
@@ -90,10 +90,11 @@ onMounted(load)
 </script>
 
 <template>
-  <main class="th-dashboard">
+  <MainLayout>
+    <main class="th-dashboard">
     <div class="dashboard-container">
       <!-- Top navigation -->
-      <header class="dashboard-header">
+      <!-- <header class="dashboard-header">
         <RouterLink to="/" class="th-brand">
           <span class="brand-icon">
             <i class="fa-solid fa-graduation-cap"></i>
@@ -126,27 +127,15 @@ onMounted(load)
 
           <AccountMenu />
         </div>
-      </header>
+      </header> -->
 
       <div class="header-rule"></div>
 
       <!-- Page introduction -->
       <section class="welcome-section">
-        <div class="welcome-copy">
-          <div class="section-eyebrow">
-            <span class="eyebrow-dot"></span>
-            YOUR WORKSPACE
-          </div>
+       
 
-          <h1>Dashboard<span class="heading-period">.</span></h1>
-
-          <p>
-            Manage your training programmes, participants and organisation
-            from one place.
-          </p>
-        </div>
-
-        <div class="welcome-actions">
+        <!-- <div class="welcome-actions">
           <v-btn
             v-if="activeOrgId && can('training.create')"
             class="create-training-button"
@@ -162,11 +151,11 @@ onMounted(load)
             <i class="fa-solid fa-plus mr-2"></i>
             New training
           </v-btn>
-        </div>
+        </div> -->
       </section>
 
       <!-- Organisation selector -->
-      <section
+      <!-- <section
         v-if="orgs.length"
         class="organisation-bar"
       >
@@ -206,7 +195,7 @@ onMounted(load)
           <span class="status-dot"></span>
           Workspace
         </div>
-      </section>
+      </section> -->
 
       <!-- Error state -->
       <v-alert
@@ -274,7 +263,7 @@ onMounted(load)
           v-if="can('registration.view')"
           class="stats-section"
         >
-          <div class="section-heading">
+          <!-- <div class="section-heading">
             <div>
               <span class="section-eyebrow">AT A GLANCE</span>
               <h2>Workspace overview</h2>
@@ -284,7 +273,7 @@ onMounted(load)
               <i class="fa-regular fa-chart-bar"></i>
               Organisation insights
             </span>
-          </div>
+          </div> -->
 
           <OrgStats
             :key="activeOrgId"
@@ -297,7 +286,6 @@ onMounted(load)
           <div class="workspace-heading">
             <div class="section-heading">
               <div>
-                <span class="section-eyebrow">MANAGE YOUR WORK</span>
 
                 <h2>{{ currentTab?.label || 'Workspace' }}</h2>
 
@@ -484,6 +472,8 @@ onMounted(load)
       </footer>
     </div>
   </main>
+  </MainLayout>
+  
 </template>
 
 <style scoped>

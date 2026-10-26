@@ -1,30 +1,50 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
-import sidebarItems from './sidebarItem'
+import { useRoute, RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import sidebarItems from './sidebarItem'
 
-defineEmits(['navigate'])
+const emit = defineEmits<{
+  (event: 'navigate'): void
+}>()
 
 const authStore = useAuthStore()
+const route = useRoute()
 
-const userRole = computed(() => {
-  return authStore.user?.role?.toLowerCase() || ''
-})
+const visibleSidebarItems = computed(() =>
+  sidebarItems
+    .filter((section) =>
+      section.roles.some((role) => authStore.userRoles.includes(role)),
+    )
+    .map((section) => ({
+      ...section,
+      items: section.items,
+    })),
+)
 
-const visibleSidebarItems = computed(() => {
-  return sidebarItems.filter((group) => {
-    return group.roles?.includes(userRole.value)
-  })
-})
+function isItemActive(path: string) {
+  if (path === '/dashboard') {
+    return route.path === '/dashboard' ||
+      route.path.startsWith('/dashboard/')
+  }
+
+  return route.path === path ||
+    route.path.startsWith(`${path}/`)
+}
 </script>
 
 <template>
   <div class="flex h-full flex-col bg-white">
-
     <!-- Logo -->
-    <div class="flex h-[76px] shrink-0 items-center border-b border-purple-50 px-6">
-      <RouterLink to="/dashboard" class="flex items-center gap-3">
-        
+    <div
+      class="flex h-[76px] shrink-0 items-center border-b border-green-50 px-6"
+    >
+      <RouterLink
+        to="/dashboard"
+        class="flex items-center gap-3"
+        @click="emit('navigate')"
+      >
+        <!-- Keep your existing logo content here -->
       </RouterLink>
     </div>
 
@@ -46,26 +66,26 @@ const visibleSidebarItems = computed(() => {
             v-for="item in group.items"
             :key="item.path"
             :to="item.path"
-            class="group flex items-center gap-3 rounded-md px-3 py-2.5 transition-all duration-150"
-            active-class="sidebar-active"
-            exact-active-class="sidebar-active"
-            @click="$emit('navigate')"
+            class="sidebar-link group flex items-center gap-3 rounded-md px-3 py-2.5 transition-all duration-150"
+            :class="{ 'sidebar-active': isItemActive(item.path) }"
+            :aria-current="isItemActive(item.path) ? 'page' : undefined"
+            @click="emit('navigate')"
           >
             <div
-              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-all group-hover:text-purple-600"
+              class="sidebar-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 transition-all"
             >
               <i :class="item.icon" class="text-sm"></i>
             </div>
 
             <span
-              class="min-w-0 flex-1 truncate text-[13px] font-medium text-gray-600 transition-colors group-hover:text-gray-900"
+              class="sidebar-label min-w-0 flex-1 truncate text-[13px] font-medium text-gray-600 transition-colors"
             >
               {{ item.title }}
             </span>
 
             <span
               v-if="item.badge"
-              class="rounded-full bg-purple-100 px-2 py-0.5 text-[8px] font-bold text-purple-600"
+              class="rounded-full bg-green-50 px-2 py-0.5 text-[8px] font-bold text-green-700"
             >
               {{ item.badge }}
             </span>
@@ -73,12 +93,10 @@ const visibleSidebarItems = computed(() => {
         </div>
       </div>
     </nav>
-
-
   </div>
 </template>
-
 <style scoped>
+
 .sidebar-scroll {
   scrollbar-width: none;
 }
@@ -87,18 +105,67 @@ const visibleSidebarItems = computed(() => {
   display: none;
 }
 
+/* Navigation #f0fdf4
+.sidebar-link {
+  background: transparent;
+  border-radius: 8px;
+  color: #211044;
+}
+
+/* Hover state */
+.sidebar-link:hover {
+  background: #f8f5fc;
+}
+
+.sidebar-link:hover .sidebar-icon {
+  color: #211044;
+}
+
+.sidebar-link:hover .sidebar-label {
+  color: #211044;
+}
+
+/* Active navigation state */
 .sidebar-active {
-  background: #fdf4ff;
+  background: #f8f5fc;
 }
 
-.sidebar-active div {
-  background: linear-gradient(135deg, #d946ef, #7c3aed);
-  color: white;
-  box-shadow: 0 4px 12px rgba(217, 70, 239, 0.2);
+/* Active icon */
+.sidebar-active .sidebar-icon {
+  background: #211044;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(33, 16, 68, 0.16);
 }
 
-.sidebar-active span {
-  color: #7c3aed;
+/* Active label */
+.sidebar-active .sidebar-label {
+  color: #211044;
   font-weight: 600;
 }
+
+/* Smooth icon and label transitions */
+.sidebar-icon {
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.sidebar-label {
+  transition: color 150ms ease;
+}
+
+/* Keyboard accessibility */
+.sidebar-link:focus-visible {
+  outline: 2px solid #211044;
+  outline-offset: 2px;
+}
+
+/* Badge styling */
+.sidebar-link .rounded-full {
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
 </style>

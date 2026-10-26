@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -9,61 +10,75 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const currentPage = computed(() => {
-  for (const group of sidebarItems) {
-    const item = group.items.find((item) => {
-      return (
-        route.path === item.path ||
-        route.path.startsWith(`${item.path}/`)
-      )
-    })
+  const items = sidebarItems.flatMap((section) => section.items)
 
-    if (item) return item.title
-  }
-
-  return 'Dashboard'
+  return (
+    [...items]
+      .sort((a, b) => b.path.length - a.path.length)
+      .find((item) =>
+        item.path === '/dashboard'
+          ? route.path === item.path
+          : route.path === item.path ||
+            route.path.startsWith(`${item.path}/`),
+      )?.title ?? 'Dashboard'
+  )
 })
 
 const userName = computed(() => {
-  const firstName = authStore.user?.user_metadata?.first_name || ''
-  const lastName = authStore.user?.user_metadata?.last_name || ''
+  const metadata = authStore.user?.user_metadata ?? {}
 
-  const fullName = `${firstName} ${lastName}`.trim()
+  const fullName = [
+    metadata.first_name,
+    metadata.last_name,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
-  return fullName || authStore.user?.user_metadata?.email?.split('@')[0] || 'User'
+  return (
+    metadata.full_name ||
+    metadata.name ||
+    fullName ||
+    authStore.user?.email ||
+    'User'
+  )
 })
 
-const userEmail = computed(() => {
-  return authStore.user?.email || ''
-})
+const userEmail = computed(() => authStore.user?.email ?? '')
 
 const userRole = computed(() => {
-  return authStore.user?.role || 'Member'
+  if (authStore.platformRole === 'super_admin') return 'Super Admin'
+  if (authStore.platformRole === 'platform_admin') return 'Platform Admin'
+  if (authStore.organisationRole === 'org_owner') return 'Organisation Owner'
+  if (authStore.organisationRole === 'org_admin') return 'Organisation Admin'
+  if (authStore.organisationRole === 'org_staff') return 'Organisation Staff'
+
+  return 'Member'
 })
 
-const organizationName = computed(() => {
-  return authStore.organization?.name || 'Your Organization'
-})
+const organisationName = computed(
+  () => authStore.organisation?.name ?? '',
+)
+
+const isOwner = computed(
+  () => authStore.organisationRole === 'org_owner',
+)
 
 const userInitials = computed(() => {
   const name = userName.value.trim()
 
-  if (!name) {
-    return 'U'
-  }
+  if (!name || name === 'User') return 'U'
 
   const parts = name.split(/\s+/)
 
-  if (parts.length === 1) {
-    return parts[0].substring(0, 2).toUpperCase()
-  }
-
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+  return parts.length > 1
+    ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+    : name.slice(0, 2).toUpperCase()
 })
 
-const handleLogout = async () => {
+async function handleLogout() {
   try {
-    await authStore.logOut()
-    await router.push('/login')
+    await authStore.signOut()
+    await router.replace('/login')
   } catch (error) {
     console.error('Logout failed:', error)
   }
@@ -75,18 +90,16 @@ const handleLogout = async () => {
     <!-- Page title -->
     <div class="min-w-0">
       
+
+     
     </div>
 
     <!-- Header actions -->
     <div class="flex items-center gap-2 sm:gap-3">
-      <!-- Notifications -->
-      
+      <!-- Notifications can remain here -->
 
       <!-- User menu -->
-      <v-menu
-        location="bottom end"
-        :offset="8"
-      >
+      <v-menu location="bottom end" :offset="8">
         <template #activator="{ props }">
           <button
             v-bind="props"
@@ -107,9 +120,7 @@ const handleLogout = async () => {
                 {{ userName }}
               </p>
 
-              <p
-                class="max-w-[150px] truncate text-[10px] text-gray-400"
-              >
+              <p class="max-w-[150px] truncate text-[10px] text-gray-400">
                 {{ userEmail }}
               </p>
             </div>
@@ -129,36 +140,30 @@ const handleLogout = async () => {
           <!-- User header -->
           <div class="border-b border-gray-100 px-4 py-4">
             <div class="flex items-center gap-3">
-              <!-- Avatar -->
               <div
                 class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-violet-600 text-sm font-bold text-white"
               >
                 {{ userInitials }}
               </div>
 
-              <!-- Details -->
               <div class="min-w-0">
-                <p
-                  class="truncate text-sm font-semibold text-gray-900"
-                >
+                <p class="truncate text-sm font-semibold text-gray-900">
                   {{ userName }}
                 </p>
 
-                <p
-                  class="mt-0.5 truncate text-xs text-gray-400"
-                >
+                <p class="mt-0.5 truncate text-xs text-gray-400">
                   {{ userEmail }}
                 </p>
 
-                <div class="mt-1 flex items-center gap-2">
+                <div class="mt-1 flex flex-wrap items-center gap-2">
                   <span
-                    class="rounded-full bg-purple-50 px-2 py-0.5 text-[9px] font-semibold capitalize text-purple-600"
+                    class="rounded-full bg-purple-50 px-2 py-0.5 text-[9px] font-semibold text-purple-600"
                   >
                     {{ userRole }}
                   </span>
 
                   <span
-                    v-if="authStore.user?.is_owner"
+                    v-if="isOwner"
                     class="rounded-full bg-green-50 px-2 py-0.5 text-[9px] font-semibold text-green-600"
                   >
                     Owner
@@ -166,47 +171,13 @@ const handleLogout = async () => {
                 </div>
               </div>
             </div>
-
-            
           </div>
 
           <!-- Menu -->
           <div class="p-2">
-            <v-list
-              class="pa-0"
-              density="comfortable"
-            >
-              <v-list-item
-                to="/profile"
-                rounded="lg"
-              >
-                <template #prepend>
-                  <i
-                    class="fa-regular fa-user mr-3 text-sm text-gray-400"
-                  ></i>
-                </template>
+            <v-list class="pa-0" density="comfortable">
+              
 
-                <v-list-item-title class="text-sm">
-                  My Profile
-                </v-list-item-title>
-              </v-list-item>
-
-              <v-list-item
-                to="/settings"
-                rounded="lg"
-              >
-                <template #prepend>
-                  <i
-                    class="fa-solid fa-gear mr-3 text-sm text-gray-400"
-                  ></i>
-                </template>
-
-                <v-list-item-title class="text-sm">
-                  Settings
-                </v-list-item-title>
-              </v-list-item>
-
-              <v-divider class="my-2"></v-divider>
 
               <v-list-item
                 rounded="lg"
