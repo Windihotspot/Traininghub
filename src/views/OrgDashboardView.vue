@@ -263,17 +263,7 @@ onMounted(load)
           v-if="can('registration.view')"
           class="stats-section"
         >
-          <!-- <div class="section-heading">
-            <div>
-              <span class="section-eyebrow">AT A GLANCE</span>
-              <h2>Workspace overview</h2>
-            </div>
-
-            <span class="overview-label">
-              <i class="fa-regular fa-chart-bar"></i>
-              Organisation insights
-            </span>
-          </div> -->
+   
 
           <OrgStats
             :key="activeOrgId"
@@ -353,20 +343,9 @@ onMounted(load)
 
               <section
                 v-if="can('training.update')"
-                class="subsection-card"
+                class="mt-4"
               >
-                <div class="subsection-heading">
-                  <div class="subsection-icon">
-                    <i class="fa-solid fa-folder-tree"></i>
-                  </div>
-
-                  <div>
-                    <h3>Training categories</h3>
-                    <p>
-                      Organise your training programmes into categories.
-                    </p>
-                  </div>
-                </div>
+               
 
                 <CategoriesManager
                   :key="activeOrgId"
