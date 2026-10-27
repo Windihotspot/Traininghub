@@ -51,7 +51,7 @@ function isItemActive(path: string) {
   <div class="flex h-full flex-col bg-white">
     <!-- Logo -->
     <div
-      class="flex h-[76px] shrink-0 items-center border-b border-green-50 px-6"
+      class="flex h-[76px] shrink-0 items-centerpx-6"
     >
       <RouterLink
         to="/dashboard"

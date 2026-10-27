@@ -227,34 +227,7 @@ onMounted(load)
         <span>Loading your organisation and dashboard data...</span>
       </section>
 
-      <!-- Empty state -->
-      <section
-        v-else-if="!orgs.length"
-        class="empty-state"
-      >
-        <div class="empty-icon">
-          <i class="fa-solid fa-building"></i>
-        </div>
-
-        <span class="section-eyebrow">WORKSPACE ACCESS</span>
-
-        <h2>No organisation yet</h2>
-
-        <p>
-          You don't belong to an organisation yet. Ask an organisation
-          owner to invite you, or contact your platform administrator
-          if you need help getting started.
-        </p>
-
-        <v-btn
-          v-if="isPlatformAdmin"
-          color="primary"
-          :to="{ name: 'admin-organisations' }"
-          rounded="lg"
-        >
-          Manage organisations
-        </v-btn>
-      </section>
+  
 
       <!-- Main workspace -->
       <template v-else-if="activeOrgId">

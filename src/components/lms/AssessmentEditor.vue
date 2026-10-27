@@ -8,6 +8,12 @@ const props = defineProps<{ modelValue: boolean; trainingId: string; moduleId: s
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void; (e: 'saved'): void }>()
 const { loading, error, run } = useAsyncAction()
 
+const QUESTION_TYPES = [
+  { label: 'Single choice', value: 'single_choice' },
+  { label: 'Multiple choice', value: 'multiple_choice' },
+  { label: 'True / False', value: 'true_false' },
+]
+
 const newQ = (): CQuestion => ({ question_type: 'single_choice', prompt: '', explanation: '', points: 1,
   options: [{ option_text: '', is_correct: true }, { option_text: '', is_correct: false }] })
 const blank = () => ({ title: '', description: '', assessment_type: props.moduleId ? 'quiz' : 'final_exam', pass_mark: 70,
@@ -44,45 +50,107 @@ async function save() {
 </script>
 
 <template>
-  <v-dialog :model-value="modelValue" max-width="820" scrollable @update:model-value="emit('update:modelValue', $event)">
-    <v-card>
-      <v-card-title>{{ assessment ? 'Edit' : 'New' }} {{ moduleId ? 'quiz' : 'final exam' }}</v-card-title>
-      <v-card-text class="space-y-4">
-        <v-alert v-if="error" type="error" variant="tonal" density="compact">{{ error.message }}</v-alert>
-        <v-text-field v-model="form.title" label="Title" variant="outlined" density="comfortable" />
-        <div class="grid md:grid-cols-4 gap-3">
-          <v-text-field v-model.number="form.pass_mark" type="number" min="0" max="100" label="Pass mark %" variant="outlined" density="compact" />
-          <v-text-field v-model.number="form.max_attempts" type="number" min="1" label="Max attempts" hint="Blank = unlimited" persistent-hint variant="outlined" density="compact" />
-          <v-text-field v-model.number="form.time_limit_minutes" type="number" min="1" label="Time limit (min)" hint="Blank = none" persistent-hint variant="outlined" density="compact" />
-          <v-switch v-model="form.is_required" label="Required" color="primary" density="compact" hide-details />
-          <v-switch v-model="form.shuffle_questions" label="Shuffle" color="primary" density="compact" hide-details />
-          <v-switch v-model="form.show_answers" label="Show answers after" color="primary" density="compact" hide-details />
-          <v-switch v-model="form.is_published" label="Published" color="primary" density="compact" hide-details />
+  <el-dialog :model-value="modelValue" class="th-dlg" width="820px" align-center destroy-on-close @update:model-value="emit('update:modelValue', $event)">
+    <template #header>
+      <div class="section-heading !mb-0">
+        <span class="section-icon"><i class="fa-solid fa-clipboard-question"></i></span>
+        <div>
+          <h2>{{ assessment ? 'Edit' : 'New' }} {{ moduleId ? 'quiz' : 'final exam' }}</h2>
+          <p>Set the rules, then add questions with their correct answers.</p>
+        </div>
+      </div>
+    </template>
+
+    <div class="flex flex-col gap-5">
+      <div v-if="error" class="alert alert-error" role="alert">
+        <span class="alert-icon">!</span>
+        <p>{{ error.message }}</p>
+      </div>
+
+      <div class="field">
+        <label for="a_title">Title <span>*</span></label>
+        <el-input id="a_title" v-model="form.title" placeholder="e.g. Module 1 check-in" />
+      </div>
+
+      <div class="grid grid-cols-3 gap-x-4 gap-y-5 max-md:grid-cols-1">
+        <div class="field">
+          <label for="a_pass">Pass mark %</label>
+          <el-input id="a_pass" v-model.number="form.pass_mark" type="number" min="0" max="100" />
+        </div>
+        <div class="field">
+          <label for="a_att">Max attempts</label>
+          <el-input id="a_att" v-model.number="form.max_attempts" type="number" min="1" />
+          <small class="field-hint">Blank = unlimited</small>
+        </div>
+        <div class="field">
+          <label for="a_time">Time limit (min)</label>
+          <el-input id="a_time" v-model.number="form.time_limit_minutes" type="number" min="1" />
+          <small class="field-hint">Blank = none</small>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-4 gap-3 max-md:grid-cols-2 max-sm:grid-cols-1">
+        <label class="switch-field"><el-switch v-model="form.is_required" /><span>Required</span></label>
+        <label class="switch-field"><el-switch v-model="form.shuffle_questions" /><span>Shuffle</span></label>
+        <label class="switch-field"><el-switch v-model="form.show_answers" /><span>Show answers</span></label>
+        <label class="switch-field"><el-switch v-model="form.is_published" /><span>Published</span></label>
+      </div>
+
+      <!-- Questions -->
+      <div v-for="(q, qi) in questions" :key="qi" class="q-card">
+        <div class="flex items-end gap-3 mb-4 max-md:flex-wrap">
+          <div class="field flex-1 min-w-[200px]">
+            <label :for="`q_${qi}`">Question {{ qi + 1 }}</label>
+            <el-input :id="`q_${qi}`" v-model="q.prompt" placeholder="Type the question" />
+          </div>
+          <div class="field w-48 max-md:flex-1">
+            <label :for="`qt_${qi}`">Type</label>
+            <el-select :id="`qt_${qi}`" :model-value="q.question_type" @change="(v: CQuestion['question_type']) => setType(q, v)">
+              <el-option v-for="t in QUESTION_TYPES" :key="t.value" :label="t.label" :value="t.value" />
+            </el-select>
+          </div>
+          <div class="field w-24">
+            <label :for="`qp_${qi}`">Points</label>
+            <el-input :id="`qp_${qi}`" v-model.number="q.points" type="number" min="1" />
+          </div>
+          <el-button text circle class="danger mb-[6px]" aria-label="Delete question" @click="questions.splice(qi, 1)"><i class="fa-solid fa-trash"></i></el-button>
         </div>
 
-        <div v-for="(q, qi) in questions" :key="qi" class="border border-gray-200 rounded-xl p-4">
-          <div class="flex gap-2 mb-2">
-            <v-text-field v-model="q.prompt" :label="`Question ${qi + 1}`" variant="outlined" density="compact" hide-details />
-            <v-select :model-value="q.question_type" :items="[{ title: 'Single choice', value: 'single_choice' }, { title: 'Multiple choice', value: 'multiple_choice' }, { title: 'True / False', value: 'true_false' }]"
-              variant="outlined" density="compact" hide-details style="max-width:190px" @update:model-value="setType(q, $event)" />
-            <v-text-field v-model.number="q.points" type="number" min="1" label="Pts" variant="outlined" density="compact" hide-details style="max-width:80px" />
-            <v-btn icon size="small" variant="text" color="error" @click="questions.splice(qi, 1)"><i class="fa-solid fa-trash"></i></v-btn>
+        <div class="flex flex-col gap-2">
+          <div v-for="(o, oi) in q.options" :key="oi" class="flex items-center gap-2">
+            <el-button circle size="small" :type="o.is_correct ? 'success' : undefined" :aria-label="o.is_correct ? 'Correct answer' : 'Mark as correct'" :aria-pressed="o.is_correct" @click="markCorrect(q, o)">
+              <i :class="['fa-solid', o.is_correct ? 'fa-check' : 'fa-circle']"></i>
+            </el-button>
+            <el-input v-model="o.option_text" :disabled="q.question_type === 'true_false'" :placeholder="`Option ${oi + 1}`" :aria-label="`Option ${oi + 1}`" />
+            <el-button v-if="q.question_type !== 'true_false' && q.options.length > 2" text circle size="small" aria-label="Remove option" @click="q.options.splice(oi, 1)"><i class="fa-solid fa-xmark"></i></el-button>
           </div>
-          <div v-for="(o, oi) in q.options" :key="oi" class="flex items-center gap-2 mb-1">
-            <v-btn icon size="x-small" :color="o.is_correct ? 'success' : undefined" variant="tonal" @click="markCorrect(q, o)">
-              <i :class="['fa-solid', o.is_correct ? 'fa-check' : 'fa-circle']"></i></v-btn>
-            <v-text-field v-model="o.option_text" :disabled="q.question_type === 'true_false'" label="Option" variant="outlined" density="compact" hide-details />
-            <v-btn v-if="q.question_type !== 'true_false' && q.options.length > 2" icon size="x-small" variant="text" @click="q.options.splice(oi, 1)"><i class="fa-solid fa-xmark"></i></v-btn>
-          </div>
-          <v-btn v-if="q.question_type !== 'true_false'" size="x-small" variant="text" @click="q.options.push({ option_text: '', is_correct: false })">+ Option</v-btn>
-          <v-text-field v-model="q.explanation" label="Explanation (shown after submit)" variant="outlined" density="compact" hide-details class="mt-2" />
         </div>
-        <v-btn variant="tonal" @click="questions.push(newQ())"><i class="fa-solid fa-plus mr-2"></i>Add question</v-btn>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer /><v-btn @click="emit('update:modelValue', false)">Cancel</v-btn>
-        <v-btn color="primary" :loading="loading" :disabled="!form.title.trim()" @click="save">Save</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+        <el-button v-if="q.question_type !== 'true_false'" size="small" text class="mt-2" @click="q.options.push({ option_text: '', is_correct: false })">
+          <i class="fa-solid fa-plus mr-2"></i>Option
+        </el-button>
+
+        <div class="field mt-4">
+          <label :for="`qe_${qi}`">Explanation (shown after submit)</label>
+          <el-input :id="`qe_${qi}`" v-model="q.explanation" />
+        </div>
+      </div>
+
+      <div><el-button class="ghost-button" @click="questions.push(newQ())"><i class="fa-solid fa-plus mr-2"></i>Add question</el-button></div>
+    </div>
+
+    <template #footer>
+      <div class="flex justify-end gap-3 max-sm:flex-col-reverse">
+        <el-button class="ghost-button" @click="emit('update:modelValue', false)">Cancel</el-button>
+        <el-button class="primary-button" type="primary" :loading="loading" :disabled="!form.title.trim()" @click="save">Save assessment</el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
+
+<style>
+/* Shared .th-dlg tokens, fields, switches, buttons and alerts come from CurriculumEditor.vue */
+.th-dlg .el-dialog__body { max-height: 65vh; overflow-y: auto; padding: 4px 10px 4px 0; }
+.th-dlg .q-card { padding: 20px; border: 1px solid #eae3ef; border-radius: 14px; background: #fcfaff; }
+.th-dlg .danger { color: #a32e38; }
+.th-dlg .el-input.is-disabled .el-input__wrapper { background: #faf8fc; }
+</style>

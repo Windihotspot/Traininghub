@@ -23,18 +23,18 @@ const sidebarItems: SidebarSection[] = [
       },
     ],
   },
-  {
-    section: 'TRAINING MANAGEMENT',
-    roles: ['org_owner', 'org_admin', 'org_staff'],
-    items: [
+  // {
+  //   section: 'TRAINING MANAGEMENT',
+  //   roles: ['org_owner', 'org_admin', 'org_staff'],
+  //   items: [
      
-      {
-        title: 'Trainings',
-        path: '/dashboard/trainings/new',
-        icon: 'fa-solid fa-circle-plus',
-      },
-    ],
-  },
+  //     {
+  //       title: 'Trainings',
+  //       path: '/dashboard/trainings/new',
+  //       icon: 'fa-solid fa-circle-plus',
+  //     },
+  //   ],
+  // },
   {
     section: 'PLATFORM ADMINISTRATION',
     roles: ['super_admin', 'platform_admin'],
