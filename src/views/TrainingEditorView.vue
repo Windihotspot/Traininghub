@@ -76,7 +76,7 @@ function onTrainingUpdated(t: Training) {
         <div v-show="tab === 'details' || !hasCurriculum">
           <TrainingForm :key="training?.id ?? 'new'" :organisation-id="organisationId" :training="training" @saved="onSaved" />
 
-          <section v-if="training" class="th-discounts">
+          <section v-if="training" class="th-discounts mt-4">
             <div class="th-section-heading">
               <span class="th-icon"><i class="fa-solid fa-percent"></i></span>
               <div><h2>Group discounts</h2><p>Reward group registrations with a discount.</p></div>
