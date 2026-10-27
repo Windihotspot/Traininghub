@@ -102,7 +102,7 @@ function onTrainingUpdated(t: Training) {
 
 <style scoped>
 .th-editor{--purple:#29143d;--purple2:#432465;--muted:#81758f;--border:#e7e1ec;--lilac:#f7f3fb;--gold:#f7c948;min-height:100vh;padding:30px 24px 20px;background:#faf8fc;color:#21172b;font-family:'DM Sans',sans-serif}
-.th-editor__container{width:100%;max-width:1060px;margin:auto}.th-editor__topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:32px}
+.th-editor__container{margin:auto}.th-editor__topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:32px}
 .th-back{display:inline-flex;align-items:center;gap:9px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600}.th-back:hover{color:var(--purple2)}
 .th-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:24px;padding:30px 32px;border:1px solid #eae3ef;border-radius:18px;background:linear-gradient(120deg,#fff,#fbf8fe);box-shadow:0 12px 32px #2c15320a}
 .th-eyebrow,.th-label{display:inline-flex;align-items:center;gap:8px;color:#8d79a0;font-size:10px;font-weight:800;letter-spacing:1.1px}.th-eyebrow i{width:7px;height:7px;border-radius:50%;background:var(--gold)}
