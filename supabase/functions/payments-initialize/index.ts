@@ -1,5 +1,5 @@
 // POST /functions/v1/payments-initialize
-// Retry / resume payment for an unpaid registration.
+// Retry / resume payment for an unpaid registration. Returns fresh Quidly Pay widget params.
 // body: { registration_reference, contact_email }
 import { serveFn, readJson, HttpError, isEmail } from '../_shared/handler.ts'
 import { jsonResponse } from '../_shared/cors.ts'
@@ -33,18 +33,20 @@ serveFn(async (req) => {
 
   // provider references must be unique per attempt
   const newRef = 'PAY-' + crypto.randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()
-  const provider = getProvider(pay.provider)
-  const appUrl = (Deno.env.get('APP_URL') ?? '').replace(/\/$/, '')
-  const init = await provider.initializePayment({
-    reference: newRef, amount: Number(pay.amount), currency: pay.currency, email: reg.contact_email as string, name: reg.contact_name,
-    callbackUrl: `${appUrl}/registration/confirmation?reference=${encodeURIComponent(newRef)}`,
+  const init = await getProvider(pay.provider).initializePayment({
+    reference: newRef, amount: Number(pay.amount), currency: pay.currency,
+    email: reg.contact_email as string, name: reg.contact_name,
     metadata: { registration_reference: reg.reference },
   })
-  await admin.from('payments').update({
-    reference: newRef, status: 'processing', checkout_url: init.checkoutUrl,
-    provider_transaction_id: init.providerTransactionId ?? null, raw_response: init.raw ?? null,
-  }).eq('id', pay.id)
-  await admin.from('payment_transactions').insert({ payment_id: pay.id, event_type: 'initialize_retry', status: 'processing', payload: init.raw ?? null })
 
-  return jsonResponse({ payment: { reference: newRef, checkout_url: init.checkoutUrl } }, 200, req)
+  // The widget has not been opened yet, so the payment is 'pending'. The old attempt's provider ref is cleared so
+  // payments-verify never validates it against the new reference. The issued reference is logged so a late webhook
+  // for the previous attempt still resolves (see findPayment in payments-webhook).
+  await admin.from('payments').update({
+    reference: newRef, status: 'pending', checkout_url: null, provider_transaction_id: null, raw_response: null,
+  }).eq('id', pay.id)
+  await admin.from('payment_transactions').insert({
+    payment_id: pay.id, event_type: 'initialize_retry', status: 'pending', payload: { mode: 'widget', reference: newRef } })
+
+  return jsonResponse({ payment: { reference: newRef, checkout_url: null, widget: init.widget ?? null } }, 200, req)
 })

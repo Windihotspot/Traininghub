@@ -1,3 +1,6 @@
+import type { QuidlyWidgetParams } from '@/lib/quidlyPay' // adjust to your filename
+
+
 export type RegistrationType = 'individual' | 'corporate'
 export type TrainingAction =
   | 'publish' | 'unpublish' | 'open_registration'
@@ -102,7 +105,7 @@ export interface CreateRegistrationResponse {
     total_amount: number
     currency: string
   }
-  payment: { reference: string; checkout_url: string | null; paid: boolean }
+   payment: { reference: string; checkout_url: string | null; widget: QuidlyWidgetParams | null; paid: boolean }
 }
 
 export interface PricingPreview {
@@ -115,14 +118,14 @@ export interface PricingPreview {
 
 // payments-verify -> { payment: { reference, status }, registration: { reference } }
 export interface PaymentVerifyResponse {
-  payment: { reference: string; status: 'paid' | 'failed' | 'cancelled' | string }
+  payment: { reference: string; status: 'paid' | 'failed' | 'cancelled' | 'processing' | string }
   registration: { reference?: string }
 }
 // payments-initialize -> { payment: { reference, checkout_url } }
+// payments-initialize -> { payment: { reference, checkout_url, widget } }
 export interface PaymentInitializeResponse {
-  payment: { reference: string; checkout_url: string | null }
+  payment: { reference: string; checkout_url: string | null; widget: QuidlyWidgetParams | null }
 }
-
 export interface OrgMember {
   id: string
   user_id: string

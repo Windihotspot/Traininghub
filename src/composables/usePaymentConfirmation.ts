@@ -2,6 +2,8 @@ import { ref, computed, onBeforeUnmount } from 'vue'
 import { RegistrationsService } from '@/services/traininghub'
 import { normalizeError } from '@/utils/apiError'
 import { loadPendingPayment, savePendingPayment, clearPendingPayment } from '@/utils/pendingPayment'
+import { useRoute, useRouter } from 'vue-router'
+import { useCheckout } from './useCheckout'
 
 const POLL_MS = 3000
 const MAX_POLLS = 10 // webhook may land slightly after the redirect
@@ -18,7 +20,9 @@ export function usePaymentConfirmation(reference: () => string) {
   let polls = 0
 
   const canResume = computed(() => !!registrationReference.value && /^\S+@\S+\.\S+$/.test(contactEmail.value.trim()))
-
+const route = useRoute()
+const router = useRouter()
+const { pay } = useCheckout()
   async function check() {
     clearTimeout(timer)
     state.value = 'checking'
@@ -37,18 +41,36 @@ export function usePaymentConfirmation(reference: () => string) {
     } catch (e) { errorMessage.value = normalizeError(e).message; state.value = 'error' }
   }
 
-  async function resume() {
-    if (!canResume.value) return
-    resuming.value = true
-    errorMessage.value = ''
-    try {
-      const res = await RegistrationsService.resumePayment(registrationReference.value, contactEmail.value.trim())
-      savePendingPayment({ registration_reference: registrationReference.value, contact_email: contactEmail.value.trim() })
-      if (res.payment.checkout_url) window.location.href = res.payment.checkout_url
-      else errorMessage.value = 'Could not restart payment. Please contact support.'
-    } catch (e) { errorMessage.value = normalizeError(e).message }
-    finally { resuming.value = false }
+ async function resume() {
+  if (!canResume.value) return
+  resuming.value = true
+  errorMessage.value = ''
+  try {
+    const email = contactEmail.value.trim()
+    const res = await RegistrationsService.resumePayment(registrationReference.value, email)
+    savePendingPayment({ registration_reference: registrationReference.value, contact_email: email })
+
+    if (!res.payment.widget) {
+      errorMessage.value = 'Could not restart payment. Please contact support.'
+      return
+    }
+
+    // The server issued a NEW payment reference. Point the URL at it first, so check()
+    // and a page refresh both verify the new payment, not the superseded one.
+    await router.replace({ query: { ...route.query, reference: res.payment.reference } })
+
+    const out = await pay(res.payment.widget)
+    polls = 0
+    if (out.status === 'completed') return await check()
+
+    state.value = out.status === 'pending' ? 'pending' : 'failed'
+    if (out.message) errorMessage.value = out.message
+  } catch (e) {
+    errorMessage.value = normalizeError(e).message
+  } finally {
+    resuming.value = false
   }
+}
 
   onBeforeUnmount(() => clearTimeout(timer))
   return { state, registrationReference, contactEmail, canResume, resuming, errorMessage, check, resume }

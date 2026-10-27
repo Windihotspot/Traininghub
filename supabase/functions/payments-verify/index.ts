@@ -1,41 +1,58 @@
-// GET|POST /functions/v1/payments-verify?reference=PAY-XXXX
-// Called by the callback page after the provider redirect. Status only ever changes
-// after the provider's own API confirms it - the redirect itself is never trusted.
+// GET|POST /functions/v1/payments-verify?reference=PAY-XXXX[&quidly_ref=...]
+// Called by the confirmation page after the widget closes/succeeds. `quidly_ref` comes from the widget callback.
+// Status only changes after Quidly's own API confirms it; the client-side callback is never trusted.
 import { serveFn, HttpError } from '../_shared/handler.ts'
 import { jsonResponse } from '../_shared/cors.ts'
 import { getAdminClient } from '../_shared/supabaseAdmin.ts'
 import { getProvider } from '../_shared/payments/index.ts'
 import { notifyPaymentSuccess } from '../_shared/notifications.ts'
 
+const clean = (v: unknown, max = 100) => String(v ?? '').trim().slice(0, max)
+
 serveFn(async (req) => {
   const url = new URL(req.url)
-  let reference = url.searchParams.get('reference')
-  if (!reference && req.method === 'POST') reference = (await req.json().catch(() => ({}))).reference
+  const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {}
+  const reference = clean(url.searchParams.get('reference') ?? body.reference)
+  const clientRef = clean(url.searchParams.get('quidly_ref') ?? body.quidly_ref)
   if (!reference) throw new HttpError(400, 'reference is required')
 
   const admin = getAdminClient()
   const { data: pay } = await admin.from('payments')
-    .select('id, reference, provider, amount, currency, status, registration_id, registrations(reference, status)')
+    .select('id, reference, provider, amount, currency, status, provider_transaction_id, registration_id, registrations(reference, status)')
     .eq('reference', reference).maybeSingle()
   if (!pay) throw new HttpError(404, 'Payment not found')
 
   let status = pay.status as string
   if (status !== 'paid') {
-    const result = await getProvider(pay.provider).verifyPayment(reference)
-    await admin.from('payment_transactions').insert({ payment_id: pay.id, event_type: 'verify', status: result.status, payload: result.raw ?? null })
+    // the widget's ref if we got one, else one saved earlier; without either, the webhook will settle it
+    const providerRef = clientRef || pay.provider_transaction_id
+    if (providerRef) {
+      const result = await getProvider(pay.provider).verifyPayment(providerRef)
 
-    if (result.status === 'paid') {
-      if (result.amount !== undefined && Math.abs(result.amount - Number(pay.amount)) > 0.01) {
-        throw new HttpError(409, 'Amount mismatch - payment flagged for review')
+      // bind: the provider payment must belong to THIS payment, or anyone could submit another payment's quidly_ref
+      if (result.reference !== pay.reference) {
+        console.error('[payments-verify] reference mismatch', { reference, verified: result.reference, providerRef })
+        throw new HttpError(409, 'This payment does not match the registration')
       }
-      const { data } = await admin.rpc('mark_payment_paid', {
-        p_reference: reference, p_txn_id: result.providerTransactionId ?? null, p_raw: result.raw ?? null })
-      if (data?.changed) await notifyPaymentSuccess(pay.registration_id)
-      status = 'paid'
-    } else if (result.status === 'failed' || result.status === 'cancelled') {
-      await admin.rpc('mark_payment_failed', {
-        p_reference: reference, p_status: result.status, p_raw: result.raw ?? null })
-      status = result.status
+      await admin.from('payment_transactions').insert({ payment_id: pay.id, event_type: 'verify', status: result.status, payload: result.raw ?? null })
+
+      if (result.status === 'paid') {
+        const badAmount = result.amount !== undefined && Math.abs(result.amount - Number(pay.amount)) > 0.01
+        const badCurrency = !!result.currency && result.currency.toUpperCase() !== String(pay.currency).toUpperCase()
+        if (badAmount || badCurrency) throw new HttpError(409, 'Amount mismatch - payment flagged for review')
+        const { data } = await admin.rpc('mark_payment_paid', {
+          p_reference: reference, p_txn_id: providerRef, p_raw: result.raw ?? null })
+        if (data?.changed) await notifyPaymentSuccess(pay.registration_id)
+        status = 'paid'
+      } else if (result.status === 'failed' || result.status === 'cancelled') {
+        await admin.rpc('mark_payment_failed', { p_reference: reference, p_status: result.status, p_raw: result.raw ?? null })
+        status = result.status
+      } else {
+        // still pending (e.g. bank transfer): remember the provider ref so a later verify/webhook can settle it
+        await admin.from('payments').update({ provider_transaction_id: providerRef, status: 'processing' })
+          .eq('id', pay.id).in('status', ['pending', 'processing'])
+        status = 'processing'
+      }
     }
   }
 

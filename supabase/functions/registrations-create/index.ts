@@ -1,6 +1,7 @@
 // POST /functions/v1/registrations-create   (public; JWT optional)
 // body: { training_id, registration_type: 'individual'|'corporate', company_name?,
 //         contact: {name,email,phone?}, participants: [{first_name,last_name,email,phone?,job_title?}] }
+// Paid registrations return payment.widget (params for window.embedQuidlyPay.initialize); free ones return paid:true.
 import { serveFn, readJson, HttpError, mapDbError, isEmail, isUuid } from '../_shared/handler.ts'
 import { jsonResponse } from '../_shared/cors.ts'
 import { getAdminClient, getAuthenticatedUser } from '../_shared/supabaseAdmin.ts'
@@ -56,7 +57,8 @@ serveFn(async (req) => {
   const { data: training } = await admin.from('trainings').select('title').eq('id', reg.training_id).single()
   const title = training?.title ?? 'your training'
   const appUrl = (Deno.env.get('APP_URL') ?? '').replace(/\/$/, '')
-  let checkoutUrl: string | null = null
+  const confirmUrl = `${appUrl}/registration/confirmation?reference=${encodeURIComponent(reg.payment_reference)}`
+  let widget: Record<string, unknown> | null = null
   let paid = false
 
   if (Number(reg.total_amount) === 0) {
@@ -66,27 +68,22 @@ serveFn(async (req) => {
     if (data?.changed) await notifyPaymentSuccess(reg.registration_id)
   } else {
     try {
-      const provider = getProvider()
-      const init = await provider.initializePayment({
+      // Quidly Pay is a client-side widget: no API call here, we only build its params.
+      const init = await getProvider().initializePayment({
         reference: reg.payment_reference, amount: Number(reg.total_amount), currency: reg.currency,
         email: clean(contact.email).toLowerCase(), name: clean(contact.name),
-        callbackUrl: `${appUrl}/registration/confirmation?reference=${encodeURIComponent(reg.payment_reference)}`,
         metadata: { registration_reference: reg.registration_reference, training_id: reg.training_id },
       })
-      checkoutUrl = init.checkoutUrl
-      await admin.from('payments').update({
-        checkout_url: init.checkoutUrl, provider_transaction_id: init.providerTransactionId ?? null,
-        raw_response: init.raw ?? null, status: 'processing',
-      }).eq('reference', reg.payment_reference)
+      widget = init.widget ?? null
       await admin.from('payment_transactions').insert({
-        payment_id: reg.payment_id, event_type: 'initialize', status: 'processing', payload: init.raw ?? null })
+        payment_id: reg.payment_id, event_type: 'initialize', status: 'pending', payload: { mode: 'widget', reference: reg.payment_reference } })
     } catch (e) {
-      // registration exists; user can retry via payments-initialize
+      // registration exists; the confirmation page can request fresh widget params via payments-initialize
       console.error('payment init failed', e)
     }
     const mail = templates.registrationCreated({
       name: clean(contact.name), training: title, reference: reg.registration_reference,
-      total: money(reg.total_amount, reg.currency), payUrl: checkoutUrl })
+      total: money(reg.total_amount, reg.currency), payUrl: confirmUrl })
     await sendEmail({ to: clean(contact.email).toLowerCase(), ...mail })
   }
 
@@ -99,6 +96,6 @@ serveFn(async (req) => {
       id: reg.registration_id, reference: reg.registration_reference, participant_count: reg.participant_count,
       subtotal: reg.subtotal, discount_amount: reg.discount_amount, total_amount: reg.total_amount, currency: reg.currency,
     },
-    payment: { reference: reg.payment_reference, checkout_url: checkoutUrl, paid },
+    payment: { reference: reg.payment_reference, checkout_url: null, widget, paid },
   }, 201, req)
 })
