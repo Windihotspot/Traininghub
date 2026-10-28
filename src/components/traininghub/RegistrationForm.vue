@@ -100,7 +100,7 @@ async function onSubmit() {
           : 'An unexpected error occurred. Please try again.',
       type: 'error',
       position: 'top-right',
-      duration: 0,
+      duration: 3000,
       showClose: true,
     })
   }

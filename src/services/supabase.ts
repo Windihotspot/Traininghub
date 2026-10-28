@@ -1,13 +1,12 @@
 
 import { createClient } from '@supabase/supabase-js'
-import { ElNotification } from 'element-plus'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 const DEBUG_SUPABASE =
   import.meta.env.DEV ||
-  import.meta.env.VITE_SUPABASE_DEBUG === 'true'
+  import.meta.env.VITE_SUPABASE_DEBUG === 'false'
 
 const redact = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -18,9 +17,7 @@ const redact = (value: unknown): unknown => {
     return Object.fromEntries(
       Object.entries(value).map(([key, item]) => [
         key,
-        /password|token|authorization|apikey|secret|cookie|bvn|nin/i.test(
-          key,
-        )
+        /password|token|authorization|apikey|secret|cookie|bvn|nin/i.test(key)
           ? '[REDACTED]'
           : redact(item),
       ]),
@@ -30,44 +27,13 @@ const redact = (value: unknown): unknown => {
   return value
 }
 
-const getErrorMessage = (
-  body: unknown,
-  fallback: string,
-): string => {
-  if (typeof body === 'string') {
-    try {
-      return getErrorMessage(JSON.parse(body), fallback)
-    } catch {
-      return body.trim() || fallback
-    }
-  }
-
-  if (body && typeof body === 'object') {
-    const error = body as Record<string, unknown>
-
-    for (const key of [
-      'message',
-      'error_description',
-      'error',
-      'details',
-      'hint',
-    ]) {
-      const value = error[key]
-
-      if (typeof value === 'string' && value.trim()) {
-        return value
-      }
-    }
-  }
-
-  return fallback
-}
 
 const loggedFetch: typeof fetch = async (input, init) => {
   const request = new Request(input, init)
+
+  // Skip all logging for refresh-token requests
   const url = new URL(request.url)
 
-  // Never expose refresh-token request details in logs.
   if (
     url.pathname === '/auth/v1/token' &&
     url.searchParams.get('grant_type') === 'refresh_token'
@@ -128,14 +94,10 @@ const loggedFetch: typeof fetch = async (input, init) => {
     try {
       const body = await response.clone().text()
 
-      if (body) {
-        try {
-          responseBody = JSON.parse(body)
-        } catch {
-          responseBody = body
-        }
-      } else {
-        responseBody = null
+      try {
+        responseBody = body ? JSON.parse(body) : null
+      } catch {
+        responseBody = body
       }
     } catch {
       responseBody = '[Unable to read response body]'
@@ -157,24 +119,6 @@ const loggedFetch: typeof fetch = async (input, init) => {
       }
     }
 
-    // Display every failed HTTP response in the top-right corner.
-    if (!response.ok) {
-      const message = getErrorMessage(
-        responseBody,
-        `${response.status} ${response.statusText || 'Request failed'}`,
-      )
-
-      ElNotification({
-        title: `Supabase Error (${response.status})`,
-        message,
-        type: 'error',
-        position: 'top-right',
-        duration: 6000,
-        showClose: true,
-        dangerouslyUseHTMLString: false,
-      })
-    }
-
     return response
   } catch (error) {
     if (DEBUG_SUPABASE) {
@@ -187,28 +131,12 @@ const loggedFetch: typeof fetch = async (input, init) => {
       })
     }
 
-    ElNotification({
-      title: 'Network Error',
-      message:
-        error instanceof Error
-          ? error.message
-          : 'Unable to connect to Supabase. Please try again.',
-      type: 'error',
-      position: 'top-right',
-      duration: 6000,
-      showClose: true,
-    })
-
     throw error
   }
 }
 
-export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey,
-  {
-    global: {
-      fetch: loggedFetch,
-    },
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: {
+    fetch: loggedFetch,
   },
-)
+})
