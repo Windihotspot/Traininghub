@@ -6,6 +6,7 @@ import { formatMoney } from '@/utils/format'
 import { savePendingPayment } from '@/utils/pendingPayment'
 import { loadQuidlyPay } from '@/lib/quidlyPay'
 import { useCheckout } from '@/composables/useCheckout'
+import { ElNotification } from 'element-plus'
 
 const { paying, pay } = useCheckout()
 
@@ -44,27 +45,67 @@ onMounted(() => {
   loadQuidlyPay().catch(() => {})
 })
 
-async function onSubmit() {
-  const res = await r.submit()
-  if (!res) return
-  savePendingPayment({
-    registration_reference: res.registration.reference,
-    contact_email: r.contact.email.trim()
-  })
 
-  const { payment } = res
-  const goConfirm = (status?: string) =>
-    router.push({
-      name: 'registration-confirmation',
-      query: { reference: payment.reference, ...(status ? { status } : {}) }
+async function onSubmit() {
+  try {
+    const res = await r.submit()
+
+    if (!res) {
+      const error = r.error.value
+
+      if (error) {
+        ElNotification({
+          title: 'Registration Error',
+          message:
+            typeof error.message === 'string'
+              ? error.message
+              : 'Registration failed. Please try again.',
+          type: 'error',
+          position: 'top-right',
+          duration: 0,
+          showClose: true,
+        })
+      }
+
+      return
+    }
+
+    savePendingPayment({
+      registration_reference: res.registration.reference,
+      contact_email: r.contact.email.trim(),
     })
 
-  // free training, or widget params failed to build: the confirmation page can resume
-  if (payment.paid || !payment.widget) return goConfirm()
+    const { payment } = res
 
-  const out = await pay(payment.widget)
-  goConfirm(out.status)
+    const goConfirm = (status?: string) =>
+      router.push({
+        name: 'registration-confirmation',
+        query: {
+          reference: payment.reference,
+          ...(status ? { status } : {}),
+        },
+      })
+
+    if (payment.paid || !payment.widget) {
+      return goConfirm()
+    }
+
+    const out = await pay(payment.widget)
+    await goConfirm(out.status)
+  } catch (error: unknown) {
+    ElNotification({
+      message:
+        error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred. Please try again.',
+      type: 'error',
+      position: 'top-right',
+      duration: 0,
+      showClose: true,
+    })
+  }
 }
+
 </script>
 
 <template>
