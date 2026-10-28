@@ -85,7 +85,7 @@ export async function runCheckout(widget: QuidlyWidgetParams, verify: VerifyFn):
 
   const out = await openWidget(widget)
   if (out.type === 'closed' || out.res?.status === 'cancelled') return { status: 'cancelled' }
-
+  console.log('[Quidly checkout callback]', out.res)
   const quidlyRef: string | undefined = out.res?.quidly_ref
   if (!quidlyRef) return { status: 'failed', message: out.res?.message || 'Your payment was not completed.' }
 

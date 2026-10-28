@@ -1,14 +1,33 @@
-// Per-tab convenience so the confirmation page can resume a payment without re-asking the email.
-// Storage may be unavailable/empty (private mode, new tab) - callers must handle null.
+
 const KEY = 'th:pending-payment'
-export interface PendingPayment { registration_reference: string; contact_email: string }
+
+export interface PendingPayment {
+  registration_reference: string
+  contact_email: string
+  quidly_ref?: string
+}
 
 export function savePendingPayment(p: PendingPayment) {
-  try { sessionStorage.setItem(KEY, JSON.stringify(p)) } catch { /* ignore */ }
+  try {
+    sessionStorage.setItem(KEY, JSON.stringify(p))
+  } catch {
+    // Storage may be unavailable.
+  }
 }
+
 export function loadPendingPayment(): PendingPayment | null {
-  try { const v = sessionStorage.getItem(KEY); return v ? (JSON.parse(v) as PendingPayment) : null } catch { return null }
+  try {
+    const value = sessionStorage.getItem(KEY)
+    return value ? (JSON.parse(value) as PendingPayment) : null
+  } catch {
+    return null
+  }
 }
+
 export function clearPendingPayment() {
-  try { sessionStorage.removeItem(KEY) } catch { /* ignore */ }
+  try {
+    sessionStorage.removeItem(KEY)
+  } catch {
+    // Storage may be unavailable.
+  }
 }
