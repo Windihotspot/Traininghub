@@ -343,6 +343,6 @@ grant execute on function public.calculate_pricing(uuid, integer) to anon, authe
 grant execute on function public.training_seats_taken(uuid)       to anon, authenticated;
 
 -- ---------- OPTIONAL: cron to expire unpaid registrations -----------------
--- create extension if not exists pg_cron;
--- select cron.schedule('expire-stale-registrations', '*/15 * * * *',
---                      $$select public.expire_stale_registrations(2)$$);
+create extension if not exists pg_cron;
+select cron.schedule('expire-stale-registrations', '*/15 * * * *',
+  $$select public.expire_stale_registrations(2)$$);

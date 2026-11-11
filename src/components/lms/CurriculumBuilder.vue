@@ -174,7 +174,7 @@ const openAssessment = (mid: string | null, a: CAssessment | null) => { aModule.
     </section>
 
     <!-- Lesson dialog -->
-    <el-dialog v-model="dlg" class="th-dlg p-4" width="680px" align-center destroy-on-close>
+    <el-dialog v-model="dlg" class="th-dlg" width="680px" align-center destroy-on-close>
       <template #header>
         <div class="section-heading !mb-0">
           <span class="section-icon"><i class="fa-solid fa-book-open"></i></span>
